@@ -1,0 +1,93 @@
+{
+  "name": "grade-manager",
+  "productName": "Grade Manager",
+  "version": "1.0.0",
+  "description": "A fast, offline desktop grade book: weekly M–F grade entry, weighted report-card grades, averages, graphs and printable report cards.",
+  "main": "src/main/main.js",
+  "author": "HandyFox",
+  "license": "MIT",
+  "homepage": "https://github.com/HandyFox/grade-manager",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HandyFox/grade-manager.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux",
+    "smoke": "bash scripts/smoke.sh"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "electron": "^45.3.4",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.handyfox.grademanager",
+    "productName": "Grade Manager",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "!src/main/smoke.js",
+      "node_modules/chart.js/dist/chart.umd.js",
+      "node_modules/chart.js/package.json",
+      "node_modules/xlsx/**/*",
+      "package.json"
+    ],
+    "fileAssociations": [
+      {
+        "ext": "gradebook",
+        "name": "Grade Manager Gradebook",
+        "description": "Grade Manager gradebook",
+        "role": "Editor"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "artifactName": "Grade-Manager-Setup-${version}.${ext}"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "category": "public.app-category.education",
+      "icon": "build/icon.png",
+      "identity": "-",
+      "artifactName": "Grade-Manager-${version}-mac.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Education",
+      "icon": "build/icon.png",
+      "maintainer": "HandyFox"
+    },
+    "publish": null,
+    "artifactName": "Grade-Manager-${version}-${os}-${arch}.${ext}"
+  }
+}

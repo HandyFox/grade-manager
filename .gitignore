@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.gradebook
+*.log
+.DS_Store
+Thumbs.db
