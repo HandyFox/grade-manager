@@ -480,6 +480,43 @@
     return d;
   }
 
+  // Row order of the paper report card, with the subject names each row usually goes by.
+  const CARD_ROWS = [
+    ['Bible', ['bible']],
+    ['Bible Memory', ['bible memory', 'memory', 'memory work']],
+    ['Reading', ['reading']],
+    ['English', ['english', 'language', 'grammar', 'language arts']],
+    ['Arithmetic', ['arithmetic', 'math', 'mathematics']],
+    ['Spelling', ['spelling']],
+    ['Social Studies', ['social studies', 'history', 'geography']],
+    ['Science/Health', ['science/health', 'science', 'health']],
+    ['Penmanship', ['penmanship', 'handwriting']],
+    ['Music', ['music']],
+    ['Art', ['art']],
+    ['Typing', ['typing', 'keyboarding']],
+  ];
+
+  /** Default rows for the copy sheet: the paper card's order, matched to this gradebook's subjects. */
+  function defaultCopyRows(doc) {
+    const norm = (t) => String(t || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const used = new Set();
+    const rows = CARD_ROWS.map(([label, aliases]) => {
+      const s = doc.subjects.find((x) => !used.has(x.id) && aliases.includes(norm(x.name)));
+      if (s) used.add(s.id);
+      return { label, subjectId: s ? s.id : null };
+    });
+    doc.subjects.forEach((s) => { if (!used.has(s.id)) rows.push({ label: s.name, subjectId: s.id }); });
+    return rows;
+  }
+
+  /** The copy-sheet rows to use: the teacher's saved order, or the default. Rows for deleted subjects become blank. */
+  function copyRows(doc) {
+    const saved = doc.settings && doc.settings.copyRows;
+    if (!Array.isArray(saved) || !saved.length) return defaultCopyRows(doc);
+    const ids = new Set(doc.subjects.map((s) => s.id));
+    return saved.map((r) => ({ label: String(r.label || ''), subjectId: r.subjectId && ids.has(r.subjectId) ? r.subjectId : null }));
+  }
+
   /** Start a new school year: keeps the setup, clears all grades and comments. */
   function newYearFrom(doc, opts) {
     opts = opts || {};
@@ -601,6 +638,6 @@
     getEntry, ensureEntry, getGrade, setGrade, getLabel, setLabel,
     addStudent, removeStudent, addSubject, removeSubject, addPeriod, removeLastPeriod,
     periodHasGrades, studentHasGrades, subjectHasGrades, slotDate, newYearFrom, nextSchoolYear, currentSchoolYear,
-    parseGradeInput, round, sampleDoc,
+    parseGradeInput, round, sampleDoc, CARD_ROWS, defaultCopyRows, copyRows,
   };
 });

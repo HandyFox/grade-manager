@@ -14,7 +14,7 @@ export function mount(app, root) {
       h('li', null, h('b', null, 'Grades'), ': pick a marking period and a subject, then type grades into the weekly grid. The RC Grade, letter, and Homework / Tests / Quizzes averages update as you type.'),
       h('li', null, h('b', null, 'Averages'), ': every student’s RC Grades for each period, plus Final and All Grades — the same as the old Averages sheet.'),
       h('li', null, h('b', null, 'Graphs'), ': compare marking periods day by day, follow trends, compare students with the class.'),
-      h('li', null, h('b', null, 'Report Cards'), ': print or save PDF report cards and progress reports, with comments.')),
+      h('li', null, h('b', null, 'Report Cards'), ': print or save PDF report cards and progress reports, with comments. The ', h('b', null, 'Copy sheet'), ' lays out each student’s grades in the same order as the paper report card (“B+ 92”) so you can copy them over quickly.')),
     h('p', null, 'Already using the Excel Grade Manager? Use File › Import from Grade Manager Spreadsheet. Students, subjects, weights, the letter scale and all grades come across.'),
 
     h('h2', null, 'Entering grades quickly'),

@@ -207,5 +207,16 @@
     return String(Math.round((Number(value) + Number.EPSILON) * f) / f);
   }
 
-  return { CATS, mean, count, weightedRc, rcFrom, letterFor, weightsFor, letterMapOf, toNumber, numbers, entryAverages, computeAll, weeklyAverages, runningAverage, columnAverages, trendSlope, format };
+  /**
+   * Text for one copy-sheet cell, written the way it goes on the paper card: "B+ 92".
+   * The letter comes from the exact average; the number is rounded to a whole percent.
+   */
+  function copyText(scale, value, letterOnly) {
+    if (value === null || value === undefined || !isFinite(value)) return '';
+    const L = letterFor(scale, value);
+    if (letterOnly) return L;
+    return `${L} ${Math.round(value + 1e-9)}`;
+  }
+
+  return { CATS, copyText, mean, count, weightedRc, rcFrom, letterFor, weightsFor, letterMapOf, toNumber, numbers, entryAverages, computeAll, weeklyAverages, runningAverage, columnAverages, trendSlope, format };
 });

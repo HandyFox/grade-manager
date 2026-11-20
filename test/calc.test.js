@@ -203,3 +203,26 @@ test('default subjects mirror the spreadsheet', () => {
   const math = doc.subjects[0];
   assert.deepEqual(M.sizesFor(doc, math), { hw: 50, test: 12, quiz: 15 });
 });
+
+test('copy sheet rows follow the paper report card', () => {
+  const doc = M.createDoc(); // spreadsheet subjects: Math, English, Reading, History, Science, ...
+  const rows = M.defaultCopyRows(doc);
+  const name = (r) => (r.subjectId ? M.subjectById(doc, r.subjectId).name : null);
+  assert.deepEqual(rows.map((r) => r.label), ['Bible', 'Bible Memory', 'Reading', 'English', 'Arithmetic', 'Spelling', 'Social Studies', 'Science/Health', 'Penmanship', 'Music', 'Art', 'Typing']);
+  assert.deepEqual(rows.map(name), ['Bible', 'Bible Memory', 'Reading', 'English', 'Math', 'Spelling', 'History', 'Science', 'Penmanship', 'Music', 'Art', null]);
+  // extra subjects go at the end; deleted subjects become blank rows
+  const extra = M.addSubject(doc, 'Phonics');
+  assert.equal(M.defaultCopyRows(doc).pop().subjectId, extra.id);
+  doc.settings.copyRows = [{ label: 'Arithmetic', subjectId: doc.subjects[0].id }, { label: 'Gone', subjectId: 'nope' }];
+  assert.deepEqual(M.copyRows(doc).map((r) => r.subjectId), [doc.subjects[0].id, null]);
+});
+
+test('copy sheet cells read like the handwritten card', () => {
+  const s = M.DEFAULT_SCALE;
+  assert.equal(C.copyText(s, 92.3), 'B+ 92');
+  assert.equal(C.copyText(s, 99.6), 'A+ 100');
+  assert.equal(C.copyText(s, 86.4), 'B- 86');
+  assert.equal(C.copyText(s, 91.5), 'B+ 92');
+  assert.equal(C.copyText(s, 98.7, true), 'A');
+  assert.equal(C.copyText(s, null), '');
+});

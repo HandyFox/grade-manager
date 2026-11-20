@@ -321,6 +321,27 @@ table.data td.clickable:hover { background: var(--green-tint); }
 .page .flag { color: #a33; font-weight: 700; }
 .page .pr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
+/* copy sheet (laid out like the paper report card) */
+.page.copy-page { padding: 0.45in 0.6in; display: flex; flex-direction: column; gap: 0.35in; }
+.page.copy-page.landscape { padding: 0.4in 0.4in; }
+.copy-block { break-inside: avoid; }
+.copy-name { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #2e6a4f; padding-bottom: 4px; margin-bottom: 6px; }
+.copy-name > span:first-child { font-family: var(--serif); font-size: 19px; font-weight: 700; }
+.copy-meta { font-size: 11px; color: #555; }
+table.copy { width: 100%; border-collapse: collapse; table-layout: fixed; }
+table.copy th, table.copy td { border: 1px solid #8fa89b; height: 0.27in; text-align: center; font-size: 15px; font-weight: 600; padding: 0 4px; white-space: nowrap; }
+table.copy th { background: #2e6a4f; color: #fff; font-size: 13px; }
+table.copy th.subj, table.copy td.subj { width: 1.9in; text-align: left; font-weight: 600; font-size: 13px; letter-spacing: .02em; text-transform: uppercase; color: #234; }
+table.copy th.subj { color: #fff; }
+table.copy td.now { background: #fff6dc; }
+table.copy th.now { background: #b7862b; }
+table.copy td.avg { background: #f1f5f2; }
+table.copy tr.blank td.subj { color: #999; }
+table.copy.wide th, table.copy.wide td { font-size: 12.5px; height: 0.3in; }
+table.copy.wide th { font-size: 10.5px; white-space: normal; line-height: 1.1; padding: 2px; }
+table.copy.wide th.subj, table.copy.wide td.subj { width: 1.6in; text-transform: none; }
+table.copy.wide tbody tr:nth-child(even) td { background: #f5f7f5; }
+
 /* ---------- welcome ---------- */
 .welcome { flex: 1; display: grid; place-items: center; overflow: auto; padding: 30px; }
 .welcome-inner { width: min(720px, 100%); }

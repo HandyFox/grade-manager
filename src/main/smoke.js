@@ -127,6 +127,16 @@ exports.run = (win) => {
       await js(`[...document.querySelectorAll('.seg button')].find((b) => b.textContent === 'Report cards').click()`); await sleep(300);
       await js(`[...document.querySelectorAll('.view-head .btn')].find((b) => b.textContent.includes('Save PDF')).click()`);
       await sleep(5000);
+      // Copy sheet (laid out like the paper report card)
+      await js(`[...document.querySelectorAll('.seg button')].find((b) => b.textContent === 'Copy sheet').click()`); await sleep(400); await shot('11b-copy-sheet');
+      await expect('copy sheet first row is Bible', `document.querySelector('table.copy td.subj').textContent === 'Bible'`);
+      await expect('copy sheet cells look like B+ 92', `[...document.querySelectorAll('table.copy td.now')].some((td) => /^[A-F][+-]? \\d+$/.test(td.textContent))`);
+      await js(`[...document.querySelectorAll('.view-head .btn')].find((b) => b.textContent.includes('Save PDF')).click()`);
+      await sleep(3000);
+      await js(`[...document.querySelectorAll('.report-controls .seg button')].find((b) => b.textContent === 'Whole class').click()`); await sleep(300); await shot('11c-copy-class');
+      await js(`[...document.querySelectorAll('.report-controls .seg button')].find((b) => b.textContent === 'Like the card').click()`); await sleep(200);
+      await js(`[...document.querySelectorAll('.report-controls .btn')].find((b) => b.textContent.includes('row order')).click(); true`); await sleep(400); await shot('11d-copy-rows');
+      await js(`document.querySelector('.modal .btn.primary').click()`); await sleep(200);
       await js(`[...document.querySelectorAll('.seg button')].find((b) => b.textContent === 'Comments').click()`); await shot('12-comments');
 
       await js(`(() => { const ta = document.querySelector('.comment-item textarea'); ta.value = 'Great progress this term.'; ta.dispatchEvent(new Event('input')); return true; })()`);

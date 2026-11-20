@@ -1,5 +1,5 @@
 // Report cards, progress reports and comments — preview, print, or save as PDF.
-import { h, clear, icon, toast, ordinal } from '../ui.js';
+import { h, clear, icon, toast, ordinal, modal } from '../ui.js';
 import { outputPages } from '../print.js';
 
 const PERIOD_COLORS = ['#2f5f8f', '#2e6a4f', '#b7862b', '#b4432e', '#7a4e9b', '#2f8c8c', '#6b6b6b', '#c0617f'];
@@ -7,7 +7,8 @@ const PERIOD_COLORS = ['#2f5f8f', '#2e6a4f', '#b7862b', '#b4432e', '#7a4e9b', '#
 export function mount(app, root) {
   const { M } = app;
   const doc = app.doc;
-  const ui = app.reportUi || (app.reportUi = { tab: 'card', period: app.period, who: 'all', pct: true, chart: true, comments: true, scale: true, sign: true });
+  const ui = app.reportUi || (app.reportUi = { tab: 'card', period: app.period, who: 'all', pct: true, chart: true, comments: true, scale: true, sign: true, copyLayout: 'student', copyAvg: null, copyLetterPct: false });
+  if (!ui.copyLayout) Object.assign(ui, { copyLayout: 'student', copyAvg: null, copyLetterPct: false });
   if (ui.period >= doc.periods.length) ui.period = doc.periods.length - 1;
   if (ui.who !== 'all' && !app.student(ui.who)) ui.who = 'all';
 
@@ -29,7 +30,7 @@ export function mount(app, root) {
   function renderHead() {
     clear(head);
     head.append(h('h1', { class: 'view-title' }, 'Report Cards'),
-      seg([['card', 'Report cards'], ['progress', 'Progress reports'], ['comments', 'Comments']], ui.tab, (v) => { ui.tab = v; render(); }),
+      seg([['card', 'Report cards'], ['progress', 'Progress reports'], ['copy', 'Copy sheet'], ['comments', 'Comments']], ui.tab, (v) => { ui.tab = v; render(); }),
       h('span', { class: 'spacer' }));
     if (ui.tab !== 'comments') {
       head.append(h('button', { class: 'btn', onclick: () => output(false) }, icon('print'), 'Print…'),
@@ -50,6 +51,7 @@ export function mount(app, root) {
       controls.append(group('Marking period', psel), h('p', { class: 'hint' }, 'Comments appear on that marking period’s report card and progress report. They save as you type.'));
       return;
     }
+    if (ui.tab === 'copy') { copyControls(psel); return; }
     const wsel = h('select', null, h('option', { value: 'all', selected: ui.who === 'all' }, `All students (${doc.students.filter((s) => !s.inactive).length})`),
       doc.students.map((s) => h('option', { value: s.id, selected: ui.who === s.id }, s.name)));
     wsel.addEventListener('change', () => { ui.who = wsel.value; renderPreview(); });
@@ -191,6 +193,114 @@ export function mount(app, root) {
     return chartImage({ type: 'bar', data: { labels: subs.map((s) => s.name), datasets }, options: baseOptions(true) }, 900, 290);
   }
 
+
+  // ---------- copy sheet: grades laid out like the paper report card ----------
+  function fillAvg() {
+    return ui.copyAvg === null ? ui.period === doc.periods.length - 1 : ui.copyAvg;
+  }
+
+  function copyControls(psel) {
+    const wsel = h('select', null, h('option', { value: 'all', selected: ui.who === 'all' }, `All students (${doc.students.filter((s) => !s.inactive).length})`),
+      doc.students.map((s) => h('option', { value: s.id, selected: ui.who === s.id }, s.name)));
+    wsel.addEventListener('change', () => { ui.who = wsel.value; renderPreview(); });
+    const avg = h('input', { type: 'checkbox', checked: fillAvg() });
+    avg.addEventListener('change', () => { ui.copyAvg = avg.checked; renderPreview(); });
+    const lp = h('input', { type: 'checkbox', checked: ui.copyLetterPct });
+    lp.addEventListener('change', () => { ui.copyLetterPct = lp.checked; renderPreview(); });
+    controls.append(...[
+      group('Layout', seg([['student', 'Like the card'], ['class', 'Whole class']], ui.copyLayout, (v) => { ui.copyLayout = v; render(); })),
+      group(ui.copyLayout === 'student' ? 'Grades through' : 'Marking period', psel),
+      ui.copyLayout === 'student' ? group('Students', wsel) : null,
+      group('Include',
+        ui.copyLayout === 'student' ? h('label', { class: 'check' }, avg, 'Fill in the Avg. column') : null,
+        h('label', { class: 'check' }, lp, 'Numbers for letter-graded subjects')),
+      group('Rows', h('button', { class: 'btn sm', onclick: editCopyRows }, 'Change row order & names…')),
+      h('p', { class: 'hint' }, ui.copyLayout === 'student'
+        ? 'Each student’s grades in the same order as your paper report card, written like “B+ 92”, two students to a page. The column you’re copying is shaded.'
+        : 'One marking period for the whole class on one page: a row per student, a column per report-card subject.')].filter(Boolean));
+  }
+
+  function copyBlock(stu) {
+    const R = app.results();
+    const P = doc.periods;
+    const through = ui.period;
+    const avgOn = fillAvg();
+    const cellFor = (subj, v) => app.C.copyText(doc.scale, v, subj.type === 'letter' && !ui.copyLetterPct);
+    const rows = M.copyRows(doc).map((row) => {
+      const subj = row.subjectId ? M.subjectById(doc, row.subjectId) : null;
+      const cells = P.map((_, p) => {
+        const v = subj && p <= through ? R.rc[p][subj.id][stu.id] : null;
+        return h('td', { class: p === through ? 'now' : '' }, subj ? cellFor(subj, v) : '');
+      });
+      const avg = subj && avgOn ? M_mean(P.map((_, p) => (p <= through ? R.rc[p][subj.id][stu.id] : null))) : null;
+      return h('tr', { class: subj ? '' : 'blank' }, h('td', { class: 'subj' }, row.label), cells, h('td', { class: 'avg' }, subj ? cellFor(subj, avg) : ''));
+    });
+    return h('div', { class: 'copy-block' },
+      h('div', { class: 'copy-name' }, h('span', null, stu.name), h('span', { class: 'copy-meta' }, [doc.info.className, doc.info.schoolYear, `through ${P[through].name}`].filter(Boolean).join(' · '))),
+      h('table', { class: 'copy' },
+        h('thead', null, h('tr', null, h('th', { class: 'subj' }, 'Report periods'), P.map((_, i) => h('th', { class: i === through ? 'now' : '' }, String(i + 1))), h('th', null, 'Avg.'))),
+        h('tbody', null, rows)));
+  }
+
+  function copyPages() {
+    if (ui.copyLayout === 'class') return [copyClassPage()];
+    const list = students();
+    const pages = [];
+    for (let i = 0; i < list.length; i += 2) {
+      pages.push(h('div', { class: 'page copy-page' }, copyBlock(list[i]), list[i + 1] ? copyBlock(list[i + 1]) : null));
+    }
+    return pages;
+  }
+
+  function copyClassPage() {
+    const R = app.results();
+    const p = ui.period;
+    const rows = M.copyRows(doc).filter((r) => r.subjectId);
+    const subjOf = (r) => M.subjectById(doc, r.subjectId);
+    return h('div', { class: 'page landscape copy-page' },
+      h('div', { class: 'copy-name' }, h('span', null, `${doc.periods[p].name} — report card grades`), h('span', { class: 'copy-meta' }, [doc.info.className, doc.info.teacher, doc.info.schoolYear].filter(Boolean).join(' · '))),
+      h('table', { class: 'copy wide' },
+        h('thead', null, h('tr', null, h('th', { class: 'subj' }, 'Student'), rows.map((r) => h('th', null, r.label)))),
+        h('tbody', null, doc.students.filter((s) => !s.inactive).map((stu) => h('tr', null, h('td', { class: 'subj' }, stu.name),
+          rows.map((r) => { const s = subjOf(r); return h('td', null, app.C.copyText(doc.scale, R.rc[p][s.id][stu.id], s.type === 'letter' && !ui.copyLetterPct)); }))))));
+  }
+
+  async function editCopyRows() {
+    let rows = M.copyRows(doc).map((r) => ({ ...r }));
+    const list = h('div');
+    const draw = () => {
+      clear(list);
+      list.appendChild(h('table', { class: 'list-table' },
+        h('thead', null, h('tr', null, h('th'), h('th', null, 'Name on the report card'), h('th', null, 'Grades from'), h('th'))),
+        h('tbody', null, rows.map((r, i) => {
+          const label = h('input', { type: 'text', value: r.label });
+          label.addEventListener('input', () => { r.label = label.value; });
+          const sel = h('select', null, h('option', { value: '' }, '(blank row)'), doc.subjects.map((s) => h('option', { value: s.id, selected: r.subjectId === s.id }, s.name)));
+          sel.addEventListener('change', () => { r.subjectId = sel.value || null; });
+          const mv = (d) => { const j = i + d; if (j < 0 || j >= rows.length) return; [rows[i], rows[j]] = [rows[j], rows[i]]; draw(); };
+          return h('tr', null, h('td', { class: 'idx' }, i + 1), h('td', null, label), h('td', null, sel),
+            h('td', { class: 'act' },
+              h('button', { class: 'icon-btn', title: 'Move up', disabled: i === 0, onclick: () => mv(-1) }, icon('up')),
+              h('button', { class: 'icon-btn', title: 'Move down', disabled: i === rows.length - 1, onclick: () => mv(1) }, icon('down')),
+              h('button', { class: 'icon-btn', title: 'Remove row', onclick: () => { rows.splice(i, 1); draw(); } }, icon('trash'))));
+        }))));
+      list.appendChild(h('div', { class: 'row-actions' },
+        h('button', { class: 'btn sm', onclick: () => { rows.push({ label: 'New row', subjectId: null }); draw(); } }, icon('plus'), 'Add row'),
+        h('button', { class: 'btn sm', onclick: () => { rows = M.defaultCopyRows(doc); draw(); } }, 'Reset to the paper card order')));
+    };
+    draw();
+    const ok = await modal({
+      title: 'Copy sheet rows',
+      wide: true,
+      body: h('div', null, h('p', { class: 'hint' }, 'Put the rows in the same order as your paper report card. A blank row (like Typing) keeps the spacing the same as the card.'), list),
+      buttons: [{ label: 'Cancel', value: false }, { label: 'Save', value: true, primary: true }],
+    });
+    if (!ok) return;
+    doc.settings.copyRows = rows.map((r) => ({ label: r.label.trim(), subjectId: r.subjectId }));
+    app.changed();
+    renderPreview();
+  }
+
   // ---------- comments ----------
   function renderComments() {
     clear(preview);
@@ -215,6 +325,7 @@ export function mount(app, root) {
 
   // ---------- render ----------
   function buildPages() {
+    if (ui.tab === 'copy') return copyPages();
     return students().map((s) => (ui.tab === 'card' ? reportCard(s) : progressReport(s)));
   }
 
@@ -222,6 +333,12 @@ export function mount(app, root) {
     clear(preview);
     preview.style.background = '';
     if (!doc.students.length) { preview.appendChild(h('p', { class: 'muted' }, 'Add students in Setup first.')); return; }
+    if (ui.tab === 'copy') {
+      const pages = copyPages();
+      pages.slice(0, 2).forEach((pg) => preview.appendChild(pg));
+      if (pages.length > 2) preview.appendChild(h('p', { style: { textAlign: 'center', color: '#444' } }, `…and ${pages.length - 2} more page${pages.length === 3 ? '' : 's'} when printed.`));
+      return;
+    }
     const list = students();
     // Preview the first few pages so it stays quick; printing builds them all.
     const shown = list.slice(0, ui.who === 'all' ? 3 : 1);
@@ -239,9 +356,10 @@ export function mount(app, root) {
     if (ui.tab === 'comments') return;
     const pages = buildPages();
     if (!pages.length) { toast('No students to print'); return; }
-    const kind = ui.tab === 'card' ? 'Report Cards' : 'Progress Reports';
+    const kind = ui.tab === 'card' ? 'Report Cards' : ui.tab === 'copy' ? 'Report Card Copy Sheet' : 'Progress Reports';
     const who = ui.who === 'all' ? '' : ` ${app.student(ui.who).name}`;
-    await outputPages(app, pages, { pdf, name: `${kind}${who} ${doc.periods[ui.period].name} ${doc.info.schoolYear}` });
+    const landscape = ui.tab === 'copy' && ui.copyLayout === 'class';
+    await outputPages(app, pages, { pdf, landscape, name: `${kind}${who} ${doc.periods[ui.period].name} ${doc.info.schoolYear}` });
   }
 
   render();

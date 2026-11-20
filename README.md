@@ -84,6 +84,7 @@ Every graph can be saved as a picture, printed, or saved as a PDF.
 
 - **Report cards** show every marking period so far plus Final or year to date. They can include a bar chart, your comments, the grading scale and signature lines.
 - **Progress reports** cover one marking period: homework, test and quiz averages, the RC grade, the change since last period, low grades flagged, and a chart.
+- A **Copy sheet** for filling in printed report cards by hand. Each student's grades are laid out in the same row order as the paper card (Bible, Bible Memory, Reading, English, Arithmetic, …, Typing), with marking periods 1–6 and Avg. Grades are written the way they go on the card ("B+ 92", or just "A" for Penmanship and Art), and the column you're copying is shaded. You can also print one marking period for the whole class on a single page. Row names and order are adjustable.
 - Print or save a PDF for one student or the whole class, one page each.
 - A **Comments** page for writing each student's comments for each marking period.
 
